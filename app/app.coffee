@@ -20,19 +20,20 @@ createGLContext = (canvas) ->
     alert "Failed to create WebGL context!"
   context
 
-createShader = (shaderSource, type) ->
-  if type is "fragment"
-    shader = gl.createShader(gl.FRAGMENT_SHADER)
-  else if type is "vertex"
-    shader = gl.createShader(gl.VERTEX_SHADER)
-  else
-    return null
-  gl.shaderSource shader, shaderSource
-  gl.compileShader shader
-  unless gl.getShaderParameter(shader, gl.COMPILE_STATUS)
-    alert gl.getShaderInfoLog(shader)
-    return null
-  shader
+loadShader = (shaderName, type) ->
+  Qajax(shaderName).then (shaderXhr) ->
+    if type is "fragment"
+      shader = gl.createShader(gl.FRAGMENT_SHADER)
+    else if type is "vertex"
+      shader = gl.createShader(gl.VERTEX_SHADER)
+    else
+      return null
+    gl.shaderSource shader, shaderXhr.responseText
+    gl.compileShader shader
+    unless gl.getShaderParameter(shader, gl.COMPILE_STATUS)
+      alert gl.getShaderInfoLog(shader)
+      return null
+    shader
 
 setupShaders = (vertexShader, fragmentShader) ->
   shaderProgram = gl.createProgram()
@@ -75,10 +76,8 @@ canvas = undefined
 startup = ->
   canvas = document.getElementById 'myGLCanvas'
   gl = WebGLDebugUtils.makeDebugContext createGLContext canvas
-  Qajax('vertex.glsl').then (vertexXhr) ->
-    Qajax('fragment.glsl').then (fragmentXhr) ->
-      v = createShader vertexXhr.responseText, 'vertex'
-      f = createShader fragmentXhr.responseText, 'fragment'
+  loadShader('vertex.glsl', 'vertex').then (v) ->
+    loadShader('fragment.glsl', 'fragment').then (f) ->
       shader = setupShaders v, f
       buffer = setupBuffers()
       gl.clearColor 0.0, 0.0, 0.0, 1.0
