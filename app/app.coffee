@@ -20,25 +20,10 @@ createGLContext = (canvas) ->
     alert "Failed to create WebGL context!"
   context
 
-loadShaderFromDOM = (id) ->
-  shaderScript = document.getElementById(id)
-
-  # If we don't find an element with the specified id
-  # we do an early exit
-  return null  unless shaderScript
-
-  # Loop through the children for the found DOM element and
-  # build up the shader source code as a string
-  shaderSource = ""
-  currentChild = shaderScript.firstChild
-  while currentChild
-    # 3 corresponds to TEXT_NODE
-    shaderSource += currentChild.textContent  if currentChild.nodeType is 3
-    currentChild = currentChild.nextSibling
-  shader = undefined
-  if shaderScript.type is "x-shader/x-fragment"
+createShader = (shaderSource, type) ->
+  if type is "fragment"
     shader = gl.createShader(gl.FRAGMENT_SHADER)
-  else if shaderScript.type is "x-shader/x-vertex"
+  else if type is "vertex"
     shader = gl.createShader(gl.VERTEX_SHADER)
   else
     return null
@@ -49,9 +34,7 @@ loadShaderFromDOM = (id) ->
     return null
   shader
 
-setupShaders = ->
-  vertexShader = loadShaderFromDOM("shader-vs")
-  fragmentShader = loadShaderFromDOM("shader-fs")
+setupShaders = (vertexShader, fragmentShader) ->
   shaderProgram = gl.createProgram()
   gl.attachShader shaderProgram, vertexShader
   gl.attachShader shaderProgram, fragmentShader
@@ -90,11 +73,15 @@ draw = (shaderProgram, vertexBuffer) ->
 gl = undefined
 canvas = undefined
 startup = ->
-  canvas = document.getElementById("myGLCanvas")
-  gl = WebGLDebugUtils.makeDebugContext(createGLContext(canvas))
-  shader = setupShaders()
-  buffer = setupBuffers()
-  gl.clearColor 0.0, 0.0, 0.0, 1.0
-  draw shader, buffer
+  canvas = document.getElementById 'myGLCanvas'
+  gl = WebGLDebugUtils.makeDebugContext createGLContext canvas
+  Qajax('vertex.glsl').then (vertexXhr) ->
+    Qajax('fragment.glsl').then (fragmentXhr) ->
+      v = createShader vertexXhr.responseText, 'vertex'
+      f = createShader fragmentXhr.responseText, 'fragment'
+      shader = setupShaders v, f
+      buffer = setupBuffers()
+      gl.clearColor 0.0, 0.0, 0.0, 1.0
+      draw shader, buffer
 
 `export default startup`
