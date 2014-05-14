@@ -2,7 +2,6 @@ gulp = require 'gulp'
 coffee = require 'gulp-coffee'
 transpile = require 'gulp-es6-module-transpiler'
 concat = require 'gulp-concat-sourcemap'
-preprocess = require 'gulp-preprocess'
 usemin = require 'gulp-usemin'
 livereload = require 'gulp-livereload'
 es = require 'event-stream'
@@ -17,9 +16,8 @@ src =
 
 gulp.task 'scripts', ->
   es.merge(gulp.src('app/**/*.coffee').pipe(coffee bare: true),
-           gulp.src 'app/**/*.js')
+           gulp.src ['app/**/*.js', '!app/main.js'])
   .pipe(transpile type: 'amd')
-  .pipe(concat 'app.js', sourcesContent: true, prefix: 1)
   .pipe gulp.dest dest.root
 
 gulp.task 'maps', ->
@@ -27,12 +25,14 @@ gulp.task 'maps', ->
   .pipe gulp.dest dest.root
 
 gulp.task 'index', ['scripts'], ->
-  gulp.src('app/index.html')
-  .pipe(preprocess context: dist: false, tests: false)
-  .pipe(usemin())
+  gulp.src(['app/index.html', 'app/main.js'])
   .pipe gulp.dest dest.root
 
-gulp.task 'default', ['index'], ->
+gulp.task 'vendor', ->
+  gulp.src('vendor/requirejs/require.js')
+  .pipe gulp.dest dest.root
+
+gulp.task 'default', ['index', 'vendor'], ->
   gulp.watch _.values(src), ['index']
   gulp.watch 'app/index.html', ['index']
   server = livereload()
